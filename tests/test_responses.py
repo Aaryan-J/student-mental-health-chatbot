@@ -78,10 +78,39 @@ def test_multi_topic_rant_acknowledges_other_theme():
 
 def test_typos_are_still_understood():
     reply = get_reply("I am stessed about my exms", HELPLINES_CONFIG)
-    assert "stress" in reply.lower()
+    # Match the stress reply exactly, not the fallback (which also mentions
+    # the word "stress").
+    assert "normal to feel stressed" in reply.lower()
 
 
 def test_burned_out_and_overwhelmed_matches_stress():
     reply = get_reply("I feel so burned out and overwhelmed with homework", HELPLINES_CONFIG)
-    assert "stress" in reply.lower()
+    assert "normal to feel stressed" in reply.lower()
+
+
+def test_word_forms_all_match_stress_topic():
+    # Regression: "stress", "stressed" and "stressing" must all give the
+    # stress reply, not the fallback.
+    for phrase in ("I have so much stress", "I am stressed", "I am stressing out"):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "normal to feel stressed" in reply.lower(), phrase
+
+
+def test_ambiguous_words_do_not_trigger_encouragement():
+    # Regression: these are ordinary sentences, not signs of distress.
+    for phrase in (
+        "shut down the computer",
+        "my phone is down",
+        "the tank is empty",
+        "that is too much work",
+        "i am down for it",
+    ):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "thank you for sharing" not in reply.lower(), phrase
+
+
+def test_feeling_words_still_trigger_encouragement():
+    for phrase in ("i feel so alone", "i have been feeling down lately", "i am lonely"):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "thank you for sharing" in reply.lower(), phrase
 

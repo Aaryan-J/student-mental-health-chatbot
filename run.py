@@ -28,8 +28,10 @@ REQUIREMENTS_FILE = PROJECT_ROOT / "requirements.txt"
 ENV_FILE = PROJECT_ROOT / ".env"
 ENV_EXAMPLE_FILE = PROJECT_ROOT / ".env.example"
 
-# The modules we need inside the virtual environment.
-REQUIRED_IMPORTS = ["dotenv", "pytest"]
+# The packages we check for inside the virtual environment. "pytest" is
+# included so `python -m pytest` works for the project's tests; the chatbot
+# itself only needs "dotenv" and "rapidfuzz" at runtime.
+REQUIRED_IMPORTS = ["dotenv", "rapidfuzz", "pytest"]
 
 MIN_PYTHON = (3, 9)
 

@@ -50,9 +50,17 @@ _INTENTS: List[Dict[str, Any]] = [
         "label": "managing stress",
         "keywords": (
             "stress", "stressed", "anxious", "anxiety", "worried", "worry",
-            "overwhelmed", "pressure", "nervous", "cant cope", "can't cope",
-            "too much", "burned out", "burnt out", "freaking out",
-            "stressed out", "under pressure",
+            "overwhelmed", "nervous", "cant cope", "can't cope", "burned out",
+            "burnt out", "freaking out", "stressed out", "under pressure",
+            "panic attack",
+        ),
+        # "pressure" and "too much" are common words, so they only count when
+        # the message is clearly about feelings.
+        "ambiguous_keywords": ("pressure", "too much"),
+        "context_words": (
+            "feel", "feeling", "felt", "overwhelmed", "anxious", "stressed",
+            "cope", "coping", "cant", "can't", "school", "exam", "exams",
+            "study", "homework", "handle", "deal",
         ),
         "reply": (
             "It is really normal to feel stressed sometimes, and it does not "
@@ -89,8 +97,14 @@ _INTENTS: List[Dict[str, Any]] = [
         "label": "finding real support",
         "keywords": (
             "counselor", "counsellor", "therapist", "help line", "helpline",
-            "talk to someone", "support", "professional", "trusted adult",
-            "school nurse", "get help", "need help", "see someone",
+            "talk to someone", "professional", "trusted adult", "school nurse",
+            "get help", "need help", "see someone",
+        ),
+        # "support" alone is too generic (e.g. "tech support").
+        "ambiguous_keywords": ("support",),
+        "context_words": (
+            "need", "want", "find", "get", "school", "someone", "talk", "help",
+            "mental", "emotional",
         ),
         "reply": (
             "Reaching out is a brave and smart thing to do. A school counselor "
@@ -105,10 +119,17 @@ _INTENTS: List[Dict[str, Any]] = [
         "name": "encouragement",
         "label": "how you are feeling",
         "keywords": (
-            "sad", "down", "lonely", "alone", "tired", "exhausted", "give up",
-            "giving up", "not good enough", "worthless", "hopeless",
-            "discouraged", "fail", "failed", "failing", "hate myself",
-            "no one cares", "cant do this", "can't do this", "unhappy", "empty",
+            "sad", "tired", "exhausted", "give up", "giving up",
+            "not good enough", "worthless", "hopeless", "discouraged", "fail",
+            "failed", "failing", "hate myself", "no one cares", "cant do this",
+            "can't do this", "unhappy", "alone", "lonely",
+        ),
+        # "down" and "empty" are too common on their own (e.g. "shut down the
+        # computer" or "the tank is empty"), so require a feeling word nearby.
+        "ambiguous_keywords": ("down", "empty"),
+        "context_words": (
+            "feel", "feeling", "felt", "so", "really", "very", "lately",
+            "inside", "and", "know why",
         ),
         "reply": (
             "Thank you for sharing that with me. Feeling this way is hard, and "
