@@ -57,3 +57,31 @@ def test_crisis_reply_includes_helplines_and_trusted_adult():
     reply = get_crisis_reply(HELPLINES_CONFIG)
     assert "Test Crisis Line" in reply
     assert "trusted adult" in reply.lower()
+
+
+def test_rant_about_exams_and_stress_returns_reply():
+    rant = (
+        "honestly I am so stressed right now, I have three exams this week and "
+        "I barely slept, I do not know where to even start with revision"
+    )
+    reply = get_reply(rant, HELPLINES_CONFIG)
+    # Should pick one of the clearly present topics, not the fallback.
+    assert reply != get_reply("the weather is nice today", HELPLINES_CONFIG)
+    assert ("stress" in reply.lower()) or ("study" in reply.lower())
+
+
+def test_multi_topic_rant_acknowledges_other_theme():
+    rant = "I am so stressed about my exam tomorrow and I feel so alone lately"
+    reply = get_reply(rant, HELPLINES_CONFIG)
+    assert "also noticed" in reply.lower()
+
+
+def test_typos_are_still_understood():
+    reply = get_reply("I am stessed about my exms", HELPLINES_CONFIG)
+    assert "stress" in reply.lower()
+
+
+def test_burned_out_and_overwhelmed_matches_stress():
+    reply = get_reply("I feel so burned out and overwhelmed with homework", HELPLINES_CONFIG)
+    assert "stress" in reply.lower()
+

@@ -1,8 +1,8 @@
-"""Local rule-based reply engine.
+"""Local rule-based reply engine with lightweight NLP scoring.
 
 This is the "brain" of the chatbot. It does not use any AI model or network
-connection. Instead it matches keywords in the user's message to one of a few
-support topics and returns a helpful, pre-written response:
+connection. Instead it scores the user's message against a few support topics
+and returns a helpful, pre-written response:
 
   * stress management
   * breathing / relaxation (step-by-step)
@@ -10,20 +10,28 @@ support topics and returns a helpful, pre-written response:
   * encouragement
   * pointing to a school counselor or helpline
 
+Longer, messier messages (rants) are handled by the helper layer in `nlp.py`:
+every topic is scored and the strongest one wins. If more than one topic shows
+up clearly, the reply acknowledges the others too.
+
 Everything returned here is plain ASCII text so it displays correctly in the
 Windows terminal as well as on Linux.
 """
 
 from typing import Any, Dict, List
 
-# Each topic has a set of keywords and a reply. Order matters: the first topic
-# whose keywords appear in the message is used.
+from . import nlp
+
+# Each topic has a set of keywords and a reply. The chatbot scores ALL topics
+# and picks the strongest, so the order here only breaks ties.
 _INTENTS: List[Dict[str, Any]] = [
     {
         "name": "breathing",
+        "label": "calming your body down",
         "keywords": (
-            "breathing", "breathe", "breath", "relax", "calm",
-            "grounding", "panic", "meditation", "quiet",
+            "breathing", "breathe", "breath", "relax", "calm", "grounding",
+            "panic", "panic attack", "meditation", "breathe in", "breathe out",
+            "slow down", "heart racing", "cant breathe", "can't breathe",
         ),
         "reply": (
             "Let us try a simple breathing exercise together. It is called "
@@ -39,9 +47,12 @@ _INTENTS: List[Dict[str, Any]] = [
     },
     {
         "name": "stress",
+        "label": "managing stress",
         "keywords": (
-            "stress", "stressed", "anxious", "anxiety", "worried",
-            "overwhelmed", "pressure", "nervous", "panic attack",
+            "stress", "stressed", "anxious", "anxiety", "worried", "worry",
+            "overwhelmed", "pressure", "nervous", "cant cope", "can't cope",
+            "too much", "burned out", "burnt out", "freaking out",
+            "stressed out", "under pressure",
         ),
         "reply": (
             "It is really normal to feel stressed sometimes, and it does not "
@@ -56,9 +67,11 @@ _INTENTS: List[Dict[str, Any]] = [
     },
     {
         "name": "study",
+        "label": "study pressure",
         "keywords": (
             "study", "studying", "exam", "exams", "test", "tests",
             "grades", "marks", "homework", "assignment", "revision",
+            "school work", "deadline", "deadlines", "behind on",
         ),
         "reply": (
             "Study pressure can feel heavy, so let us make it more manageable:\n"
@@ -73,9 +86,11 @@ _INTENTS: List[Dict[str, Any]] = [
     },
     {
         "name": "counselor",
+        "label": "finding real support",
         "keywords": (
             "counselor", "counsellor", "therapist", "help line", "helpline",
             "talk to someone", "support", "professional", "trusted adult",
+            "school nurse", "get help", "need help", "see someone",
         ),
         "reply": (
             "Reaching out is a brave and smart thing to do. A school counselor "
@@ -88,10 +103,12 @@ _INTENTS: List[Dict[str, Any]] = [
     },
     {
         "name": "encouragement",
+        "label": "how you are feeling",
         "keywords": (
-            "sad", "down", "lonely", "alone", "tired", "give up",
-            "not good enough", "worthless", "hopeless", "discouraged",
-            "fail", "failed", "failing",
+            "sad", "down", "lonely", "alone", "tired", "exhausted", "give up",
+            "giving up", "not good enough", "worthless", "hopeless",
+            "discouraged", "fail", "failed", "failing", "hate myself",
+            "no one cares", "cant do this", "can't do this", "unhappy", "empty",
         ),
         "reply": (
             "Thank you for sharing that with me. Feeling this way is hard, and "
@@ -133,6 +150,47 @@ def _format_helplines(helplines: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _intent_by_name(name: str) -> Dict[str, Any]:
+    """Look up a topic definition by its name."""
+    for intent in _INTENTS:
+        if intent["name"] == name:
+            return intent
+    return _INTENTS[0]
+
+
+def _build_reply(message: str) -> str:
+    """Score the message against every topic and build the best reply.
+
+    The strongest topic decides the main reply. If a second topic is also
+    clearly present, we add a short line acknowledging it, so a long rant
+    about several things still feels heard.
+    """
+    scores = nlp.score_topics(message, _INTENTS)
+    top_name, top_score = scores[0]
+
+    # Nothing matched with any confidence -> friendly fallback.
+    if top_score == 0:
+        return _FALLBACK
+
+    reply = _intent_by_name(top_name)["reply"]
+
+    # Acknowledge a second theme if it is meaningfully present.
+    others = [
+        (name, score)
+        for name, score in scores[1:]
+        if score > 0 and score * 2 >= top_score
+    ]
+    if others:
+        other_labels = [_intent_by_name(name)["label"] for name, _ in others]
+        reply += (
+            "\n\nI also noticed you mentioned "
+            + " and ".join(other_labels)
+            + ". We can talk about that too whenever you are ready."
+        )
+
+    return reply
+
+
 def get_reply(message: str, helplines_config: Dict[str, Any]) -> str:
     """Return a local, rule-based reply for the given message.
 
@@ -155,12 +213,7 @@ def get_reply(message: str, helplines_config: Dict[str, Any]) -> str:
                 "counselor."
             )
 
-    # Match the first topic whose keywords appear in the message.
-    for intent in _INTENTS:
-        if any(keyword in lowered for keyword in intent["keywords"]):
-            return intent["reply"]
-
-    return _FALLBACK
+    return _build_reply(message)
 
 
 def get_crisis_reply(helplines_config: Dict[str, Any]) -> str:

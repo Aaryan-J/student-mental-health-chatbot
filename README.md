@@ -28,8 +28,17 @@ mental health and well-being.
   - study-pressure tips
   - encouragement
   - finding a school counselor or helpline
+- A **lightweight, offline NLP layer** (see `src/nlp.py`) so the user can rant:
+  - text is normalized and split into words, and simple word endings are
+    stripped ("stressed" -> "stress")
+  - each topic is **scored** and the strongest one wins, instead of taking the
+    first keyword that happens to appear
+  - small typos are tolerated using fuzzy matching (`rapidfuzz`)
+  - if a long message clearly covers more than one topic, the reply
+    acknowledges the other theme too
 - A **safety layer written in plain Python** (not left to any AI):
   - a case-insensitive keyword check for self-harm or suicide terms
+  - it stays strict and deterministic (no fuzzy matching) so it is predictable
   - when triggered, the normal reply is skipped entirely and a crisis message
     with helplines is shown, urging the user to contact a trusted adult **now**
 - Helplines are loaded from `config/helplines.json`, so they are easy to edit.
@@ -41,6 +50,9 @@ mental health and well-being.
   diagnose** any condition or give medical advice.
 - It gives **general wellbeing tips only**. It is not a substitute for
   professional help.
+- It is **not a trained AI model**. The NLP is a small set of rules: scoring
+  keywords with light stemming and fuzzy matching. It understands many rants,
+  but unusual phrasings, sarcasm or indirect hints can still be missed.
 - Its replies come from fixed, pre-written rules, so they will not always
   perfectly match what the user meant.
 - The crisis check is a keyword check. It is deliberately simple and
@@ -71,7 +83,7 @@ On first run, `run.py` will:
 5. Re-launch the chatbot using the `.venv` Python.
 
 It needs no API key. On the very first run it needs an internet connection
-only to download the two small packages in `requirements.txt`.
+only to download the small packages in `requirements.txt`.
 
 ## How to run the tests
 
@@ -92,7 +104,7 @@ run the tests using the virtual environment's Python directly:
 ```
 chatbot/
 |-- run.py                  # entry point: sets up the venv and launches the bot
-|-- requirements.txt        # python-dotenv, pytest
+|-- requirements.txt        # python-dotenv, rapidfuzz, pytest
 |-- .env.example            # optional settings (no secrets, no API key)
 |-- .gitignore
 |-- LICENSE                 # MIT License
@@ -103,10 +115,12 @@ chatbot/
 |   |-- __init__.py
 |   |-- paths.py            # pathlib-based project-root path handling
 |   |-- config.py           # loads .env and helplines.json (UTF-8)
+|   |-- nlp.py              # lightweight offline NLP: normalize/stem/score
 |   |-- safety.py           # plain-Python crisis keyword check
 |   |-- responses.py        # local rule-based reply engine
 |   `-- chatbot.py          # console loop and topics
 `-- tests/
+    |-- test_nlp.py         # NLP helper tests
     |-- test_safety.py      # crisis check tests
     `-- test_responses.py   # rule-engine tests
 ```
