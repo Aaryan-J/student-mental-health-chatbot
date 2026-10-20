@@ -29,19 +29,27 @@ mental health and well-being.
   - encouragement
   - finding a school counselor or helpline
 - A **lightweight, offline NLP layer** (see `src/nlp.py`) so the user can rant:
-  - text is normalized and split into words, and simple word endings are
-    stripped ("stressed" -> "stress")
+  - text is normalized (case folded, apostrophes removed, hyphens turned into
+    spaces) and split into words, and simple word endings are stripped
+    ("stressed" -> "stress"), so "can't cope", "cant cope" and "self-harm" /
+    "self harm" all line up
   - each topic is **scored** and the strongest one wins, instead of taking the
     first keyword that happens to appear
+  - each topic has a broad set of keywords and phrases, so many everyday ways
+    of describing stress, exam pressure, feeling low, etc. are recognised
   - small typos are tolerated using fuzzy matching (`rapidfuzz`)
   - if a long message clearly covers more than one topic, the reply
-    acknowledges the other theme too
+    acknowledges the other themes too
 - A **safety layer written in plain Python** (not left to any AI):
-  - a case-insensitive keyword check for self-harm or suicide terms
-  - it stays strict and deterministic (no fuzzy matching) so it is predictable
+  - a case-insensitive phrase check covering many ways of expressing self-harm
+    or suicidal thoughts
+  - it stays strict and deterministic (no fuzzy matching) so it is predictable,
+    and phrases only match as whole words
   - when triggered, the normal reply is skipped entirely and a crisis message
     with helplines is shown, urging the user to contact a trusted adult **now**
 - Helplines are loaded from `config/helplines.json`, so they are easy to edit.
+- A bad or missing `config/helplines.json` never crashes the bot: it falls back
+  to safe default guidance.
 - Runs the same way on **Windows and Linux** with no manual tweaking.
 
 ## Limitations and safety disclaimer
@@ -121,6 +129,7 @@ chatbot/
 |   `-- chatbot.py          # console loop and topics
 `-- tests/
     |-- test_nlp.py         # NLP helper tests
+    |-- test_config.py      # config loading / fallback tests
     |-- test_safety.py      # crisis check tests
     `-- test_responses.py   # rule-engine tests
 ```

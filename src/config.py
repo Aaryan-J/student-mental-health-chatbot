@@ -31,6 +31,18 @@ def get_bot_name() -> str:
     return os.environ.get("BOT_NAME", DEFAULT_BOT_NAME).strip() or DEFAULT_BOT_NAME
 
 
+def _valid_helplines(value: Any) -> bool:
+    """Return True if value looks like a usable list of helpline entries.
+
+    We accept an empty list (no helplines configured) and any list where every
+    item is a dictionary. Anything else (None, a string, a list of strings) is
+    rejected so callers can fall back safely instead of crashing.
+    """
+    if not isinstance(value, list):
+        return False
+    return all(isinstance(entry, dict) for entry in value)
+
+
 def load_helplines() -> Dict[str, Any]:
     """Load helpline details from config/helplines.json.
 
@@ -57,11 +69,16 @@ def load_helplines() -> Dict[str, Any]:
     try:
         raw = paths.HELPLINES_FILE.read_text(encoding="utf-8")
         data = json.loads(raw)
-        # Basic validation so callers can rely on the shape.
-        if not isinstance(data, dict) or "helplines" not in data:
-            return fallback
-        data.setdefault("crisis_message", fallback["crisis_message"])
-        return data
     except (OSError, ValueError):
         # File missing/unreadable or bad JSON -> use the fallback.
         return fallback
+
+    # The file must be a JSON object with a usable "helplines" list.
+    if not isinstance(data, dict) or not _valid_helplines(data.get("helplines")):
+        return fallback
+
+    # Fill in the crisis message if it is missing or not a string.
+    if not isinstance(data.get("crisis_message"), str) or not data["crisis_message"]:
+        data["crisis_message"] = fallback["crisis_message"]
+
+    return data

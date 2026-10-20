@@ -29,9 +29,14 @@ _INTENTS: List[Dict[str, Any]] = [
         "name": "breathing",
         "label": "calming your body down",
         "keywords": (
-            "breathing", "breathe", "breath", "relax", "calm", "grounding",
-            "panic", "panic attack", "meditation", "breathe in", "breathe out",
-            "slow down", "heart racing", "cant breathe", "can't breathe",
+            "breath", "breathe", "relax", "calm", "grounding",
+            "meditation", "meditate", "mindfulness", "panic", "panic attack",
+            "breathe in", "breathe out", "slow down", "slow breathing",
+            "heart racing", "heart pounding", "cant breathe", "breathless",
+            "cant catch my breath", "hyperventilating", "hyperventilate",
+            "chest tight", "chest feels tight", "hands are shaking", "shaking",
+            "light headed", "lightheaded", "dizzy", "ground myself",
+            "calm down", "calm myself",
         ),
         "reply": (
             "Let us try a simple breathing exercise together. It is called "
@@ -49,18 +54,24 @@ _INTENTS: List[Dict[str, Any]] = [
         "name": "stress",
         "label": "managing stress",
         "keywords": (
-            "stress", "stressed", "anxious", "anxiety", "worried", "worry",
-            "overwhelmed", "nervous", "cant cope", "can't cope", "burned out",
-            "burnt out", "freaking out", "stressed out", "under pressure",
-            "panic attack",
+            "stress", "anxious", "anxiety", "worry", "overwhelmed",
+            "nervous", "cant cope", "cope", "burned out", "burnt out",
+            "freaking out", "stressed out", "under pressure", "on edge",
+            "tense", "cant handle", "cannot handle", "breaking point",
+            "at my breaking point", "drowning", "piling up", "at my limit",
+            "reaching my limit", "losing it", "losing my mind", "spiraling",
+            "overthink", "wound up", "cant relax", "no control",
+            "everything is too much", "cant sleep", "cannot sleep",
+            "trouble sleeping", "cant switch off", "cant switch my brain off",
         ),
         # "pressure" and "too much" are common words, so they only count when
         # the message is clearly about feelings.
         "ambiguous_keywords": ("pressure", "too much"),
         "context_words": (
             "feel", "feeling", "felt", "overwhelmed", "anxious", "stressed",
-            "cope", "coping", "cant", "can't", "school", "exam", "exams",
-            "study", "homework", "handle", "deal",
+            "cope", "coping", "cant", "school", "exam", "exams", "study",
+            "homework", "handle", "deal", "parents", "family", "friends",
+            "everyone",
         ),
         "reply": (
             "It is really normal to feel stressed sometimes, and it does not "
@@ -77,9 +88,13 @@ _INTENTS: List[Dict[str, Any]] = [
         "name": "study",
         "label": "study pressure",
         "keywords": (
-            "study", "studying", "exam", "exams", "test", "tests",
-            "grades", "marks", "homework", "assignment", "revision",
-            "school work", "deadline", "deadlines", "behind on",
+            "study", "exam", "finals", "test", "quiz", "grades", "marks",
+            "homework", "assignment", "revision", "revise", "coursework",
+            "school work", "deadline", "behind on", "falling behind",
+            "cant focus", "cannot focus", "procrastinate", "no time to study",
+            "too much homework", "too many assignments", "failing my exam",
+            "failing my finals", "failing my test", "fail my finals",
+            "exam stress", "test stress", "study stress",
         ),
         "reply": (
             "Study pressure can feel heavy, so let us make it more manageable:\n"
@@ -96,9 +111,12 @@ _INTENTS: List[Dict[str, Any]] = [
         "name": "counselor",
         "label": "finding real support",
         "keywords": (
-            "counselor", "counsellor", "therapist", "help line", "helpline",
-            "talk to someone", "professional", "trusted adult", "school nurse",
-            "get help", "need help", "see someone",
+            "counselor", "counsellor", "therapist", "therapy", "help line",
+            "helpline", "talk to someone", "speak to someone",
+            "talk to a professional", "see someone", "professional",
+            "trusted adult", "school nurse", "school counselor",
+            "get help", "need help", "help me", "reach out", "get support",
+            "who can i talk to", "mental health",
         ),
         # "support" alone is too generic (e.g. "tech support").
         "ambiguous_keywords": ("support",),
@@ -121,15 +139,20 @@ _INTENTS: List[Dict[str, Any]] = [
         "keywords": (
             "sad", "tired", "exhausted", "give up", "giving up",
             "not good enough", "worthless", "hopeless", "discouraged", "fail",
-            "failed", "failing", "hate myself", "no one cares", "cant do this",
-            "can't do this", "unhappy", "alone", "lonely",
+            "failure", "hate myself", "hate my life", "no one cares",
+            "nobody likes me",
+            "no friends", "cant do this", "unhappy", "alone", "lonely",
+            "burden", "a burden", "like a burden", "invisible",
+            "not good at anything", "want to cry", "like crying",
+            "feel like crying", "scared", "afraid", "trapped", "stuck", "numb",
+            "feel numb", "angry", "so angry", "upset", "miserable",
         ),
         # "down" and "empty" are too common on their own (e.g. "shut down the
         # computer" or "the tank is empty"), so require a feeling word nearby.
         "ambiguous_keywords": ("down", "empty"),
         "context_words": (
             "feel", "feeling", "felt", "so", "really", "very", "lately",
-            "inside", "and", "know why",
+            "inside", "know why",
         ),
         "reply": (
             "Thank you for sharing that with me. Feeling this way is hard, and "
@@ -154,14 +177,24 @@ _FALLBACK = (
 )
 
 
-def _format_helplines(helplines: List[Dict[str, Any]]) -> str:
-    """Turn the helpline list into a readable block of text."""
+def _format_helplines(helplines: Any) -> str:
+    """Turn the helpline list into a readable block of text.
+
+    Defensive: if the value is not a list (for example a bad config file), or
+    an entry is malformed, we skip the bad parts instead of crashing. All
+    values are coerced to text so a number stored as a JSON number still works.
+    """
+    if not isinstance(helplines, list):
+        return ""
+
     lines = []
     for entry in helplines:
-        region = entry.get("region", "")
-        name = entry.get("name", "")
-        number = entry.get("number", "")
-        note = entry.get("note", "")
+        if not isinstance(entry, dict):
+            continue
+        region = str(entry.get("region", ""))
+        name = str(entry.get("name", ""))
+        number = str(entry.get("number", ""))
+        note = str(entry.get("note", ""))
         line = "  - {name} ({region}): {number}".format(
             name=name, region=region, number=number
         )
@@ -195,12 +228,13 @@ def _build_reply(message: str) -> str:
 
     reply = _intent_by_name(top_name)["reply"]
 
-    # Acknowledge a second theme if it is meaningfully present.
+    # Acknowledge up to two other themes that are clearly present (at least
+    # about a third of the top score), so a long rant still feels heard.
     others = [
         (name, score)
         for name, score in scores[1:]
-        if score > 0 and score * 2 >= top_score
-    ]
+        if score > 0 and score * 3 >= top_score
+    ][:2]
     if others:
         other_labels = [_intent_by_name(name)["label"] for name, _ in others]
         reply += (
@@ -221,15 +255,15 @@ def get_reply(message: str, helplines_config: Dict[str, Any]) -> str:
     if not message or not message.strip():
         return "I am listening whenever you are ready. What is on your mind?"
 
-    lowered = message.lower()
+    lowered = nlp.normalize(message)
 
     # Explicit request for helplines -> show the configured numbers.
     if "helpline" in lowered or "help line" in lowered:
-        helplines = helplines_config.get("helplines", [])
-        if helplines:
+        formatted = _format_helplines(helplines_config.get("helplines", []))
+        if formatted:
             return (
                 "Here are some helplines you can contact. They are free and "
-                "confidential:\n" + _format_helplines(helplines) + "\n"
+                "confidential:\n" + formatted + "\n"
                 "Please also consider telling a trusted adult or your school "
                 "counselor."
             )
@@ -247,12 +281,12 @@ def get_crisis_reply(helplines_config: Dict[str, Any]) -> str:
         "crisis_message",
         "Please reach out to a trusted adult or a helpline right now.",
     )
-    helplines = helplines_config.get("helplines", [])
+    formatted = _format_helplines(helplines_config.get("helplines", []))
 
     parts = [message]
-    if helplines:
+    if formatted:
         parts.append("Helplines you can contact now:")
-        parts.append(_format_helplines(helplines))
+        parts.append(formatted)
     parts.append(
         "Please talk to a trusted adult - a parent, guardian, teacher, or "
         "school counselor - right now. You deserve support, and you do not "

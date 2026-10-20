@@ -4,7 +4,15 @@ from src import nlp
 
 
 def test_normalize_lowercases_and_collapses_spaces():
-    assert nlp.normalize("  I'm  SO   Stressed!  ") == "i'm so stressed!"
+    assert nlp.normalize("  I'm  SO   Stressed!  ") == "im so stressed!"
+
+
+def test_normalize_folds_apostrophes_and_hyphens():
+    # Apostrophes are removed (contractions stay one word) and hyphens become
+    # spaces, so variants line up with the stored keywords.
+    assert nlp.normalize("can't cope") == "cant cope"
+    assert nlp.normalize("self-harm") == "self harm"
+    assert nlp.normalize("don't") == "dont"
 
 
 def test_tokenize_splits_into_words():
@@ -89,3 +97,19 @@ def test_plain_keyword_matches_without_context():
     # Words like "alone" are specific enough on their own.
     scores = nlp.score_topics("i am alone", _topics_with_context())
     assert scores[0][1] > 0
+
+
+def test_phrase_matches_only_as_whole_words():
+    assert nlp.phrase_present("under pressure", "i am under pressure") is True
+    # Must not match inside a larger word.
+    assert nlp.phrase_present("under pressure", "thunder pressured") is False
+
+
+def test_phrase_present_normalizes_its_input():
+    # "self-harm" and "self harm" must be treated the same.
+    assert nlp.phrase_present("self-harm", nlp.normalize("self harm")) is True
+
+
+def test_multiword_keyword_weight_is_high():
+    # A whole phrase is a strong signal and should outweigh a single word.
+    assert nlp._keyword_weight("panic attack") > nlp._keyword_weight("sad")

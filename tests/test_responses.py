@@ -114,3 +114,79 @@ def test_feeling_words_still_trigger_encouragement():
         reply = get_reply(phrase, HELPLINES_CONFIG)
         assert "thank you for sharing" in reply.lower(), phrase
 
+
+# --- Expanded keyword coverage (Part B) ---
+
+def test_new_stress_phrases_are_recognised():
+    for phrase in (
+        "i cannot handle this anymore",
+        "i feel like i am drowning",
+        "i am at my breaking point",
+        "everything is piling up",
+        "i keep overthinking everything",
+        "i cannot sleep at night",
+    ):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "normal to feel stressed" in reply.lower(), phrase
+
+
+def test_new_breathing_phrases_are_recognised():
+    for phrase in (
+        "i am hyperventilating",
+        "my hands are shaking",
+        "i feel light headed",
+        "teach me to meditate",
+        "i need to ground myself",
+    ):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "box breathing" in reply.lower(), phrase
+
+
+def test_new_study_phrases_are_recognised():
+    for phrase in (
+        "i have so much coursework",
+        "i procrastinate all the time",
+        "i am falling behind",
+        "i am going to fail my finals",
+        "i cannot focus on my revision",
+    ):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "study pressure" in reply.lower(), phrase
+
+
+def test_new_encouragement_phrases_are_recognised():
+    for phrase in (
+        "i feel like a burden",
+        "i feel invisible",
+        "i am not good at anything",
+        "nobody likes me",
+        "i feel trapped",
+        "i feel numb",
+    ):
+        reply = get_reply(phrase, HELPLINES_CONFIG)
+        assert "thank you for sharing" in reply.lower(), phrase
+
+
+def test_help_me_routes_to_counselor():
+    reply = get_reply("help me", HELPLINES_CONFIG)
+    assert "counselor" in reply.lower()
+
+
+def test_helpline_request_with_hyphen_and_case():
+    reply = get_reply("HELP-LINE please", HELPLINES_CONFIG)
+    assert "Test Crisis Line" in reply
+
+
+def test_malformed_helplines_do_not_crash():
+    # A bad config value must not raise; helpline request falls back gracefully.
+    bad = {"crisis_message": "x", "helplines": None}
+    assert get_reply("helplines", bad)          # no crash
+    assert get_crisis_reply(bad)                # no crash
+
+
+def test_crisis_reply_with_non_dict_entries_skips_them():
+    bad = {"crisis_message": "m", "helplines": [{"name": "Ok", "number": "1"}, "junk"]}
+    reply = get_crisis_reply(bad)
+    assert "Ok" in reply
+
+

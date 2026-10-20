@@ -32,11 +32,19 @@ FUZZY_MIN_LENGTH = 5
 def normalize(text: str) -> str:
     """Lower-case the text and collapse whitespace.
 
-    Apostrophes and other punctuation are kept in place (only leading and
-    trailing whitespace is removed), which lets multi-word phrases match as
-    written. Use tokenize() when you want clean words.
+    Apostrophes and hyphens are turned into spaces so that word variants line
+    up: "can't cope", "cant cope" and "can not cope" become the same tokens,
+    and "self-harm" becomes "self harm". This makes phrase matching reliable
+    without having to list every spelling by hand. Punctuation is otherwise
+    kept for phrase matching; use tokenize() when you want clean words.
     """
-    return re.sub(r"\s+", " ", (text or "").lower()).strip()
+    lowered = (text or "").lower()
+    # Hyphens are word separators ("self-harm" -> "self harm"), but apostrophes
+    # are simply removed so contractions stay one word ("can't" -> "cant",
+    # "don't" -> "dont"). The keyword list is written in the folded form.
+    lowered = lowered.replace("'", "").replace("\u2019", "")
+    lowered = lowered.replace("-", " ")
+    return re.sub(r"\s+", " ", lowered).strip()
 
 
 def tokenize(text: str) -> List[str]:
@@ -69,9 +77,21 @@ def stem(word: str) -> str:
     return word
 
 
-def _phrase_present(needle: str, haystack: str) -> bool:
-    """Return True if a multi-word phrase appears in the normalized text."""
-    return needle in haystack
+def phrase_present(needle: str, haystack_norm: str) -> bool:
+    """Return True if a single- or multi-word phrase appears as whole words.
+
+    Both strings are assumed to be normalized (spaces, no extra punctuation).
+    We pad with spaces so "under pressure" only matches "under pressure" and
+    not something like "thunder pressured".
+    """
+    needle = normalize(needle)
+    if not needle:
+        return False
+    return (" " + needle + " ") in (" " + haystack_norm + " ")
+
+
+# Kept as an internal alias for backwards compatibility within the package.
+_phrase_present = phrase_present
 
 
 def match_keyword(
@@ -84,11 +104,13 @@ def match_keyword(
       * a single word (matched against tokens by exact form, by stem, or by a
         close fuzzy match for small typos).
     """
-    keyword = keyword.lower().strip()
+    # Normalize the keyword the same way as the text so "self-harm",
+    # "self harm" and "can't"/"cant" all line up.
+    keyword = normalize(keyword)
     if not keyword:
         return 0
 
-    # Multi-word phrases are matched as a substring of the normalized text.
+    # Multi-word phrases are matched as whole words in the normalized text.
     if " " in keyword:
         return 1 if _phrase_present(keyword, text_norm) else 0
 
@@ -113,9 +135,14 @@ def match_keyword(
 
 
 def _keyword_weight(keyword: str) -> int:
-    """Give more specific keywords (longer / multi-word) a higher weight."""
+    """Give more specific keywords (multi-word / longer) a higher weight.
+
+    A whole phrase such as "panic attack" is a much stronger signal than a
+    single short word, so it is weighted 4 instead of 1. This keeps one clear
+    phrase from being outvoted by several loose single words.
+    """
     if " " in keyword:
-        return 3
+        return 4
     return 2 if len(keyword) >= 7 else 1
 
 
