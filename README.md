@@ -118,7 +118,7 @@ chatbot/
 |-- LICENSE                 # MIT License
 |-- README.md
 |-- config/
-|   `-- helplines.json      # helplines and the crisis message (EDIT THIS)
+|   `-- helplines.json      # helplines (India) and the crisis message
 |-- src/
 |   |-- __init__.py
 |   |-- paths.py            # pathlib-based project-root path handling
@@ -134,31 +134,33 @@ chatbot/
     `-- test_responses.py   # rule-engine tests
 ```
 
-## How to replace the helpline numbers
+## Helpline numbers
 
-The helplines are placeholders and **must be replaced** before you share this
-project with anyone. Open `config/helplines.json` and edit each entry:
+This project ships configured for **India** (national lines only). Open
+`config/helplines.json` to see or edit them:
 
 ```json
 {
   "crisis_message": "...",
   "helplines": [
     {
-      "region": "Your Country",
-      "name": "National Crisis / Suicide Prevention Line",
-      "number": "REPLACE-WITH-LOCAL-NUMBER",
-      "note": "REPLACE WITH YOUR COUNTRY'S HELPLINE"
+      "region": "India",
+      "name": "Tele-MANAS (Govt. of India, 24x7)",
+      "number": "14416",
+      "note": "Toll-free, multiple languages"
     }
   ]
 }
 ```
 
-Replace the `region`, `name`, `number` and `note` values with real helpline
-details for your country. You can add or remove entries as needed. Every value
-is plain text; keep the file valid JSON (commas between entries, no trailing
-comma on the last item).
+If you are in another country, replace the `region`, `name`, `number` and `note`
+values with real helpline details for your country. You can add or remove
+entries as needed. Every value is plain text; keep the file valid JSON (commas
+between entries, no trailing comma on the last item).
 
-You can find official helplines through your national health service or the
+Helpline numbers and hours can change over time, so it is worth re-checking that
+they are current before relying on them. You can find official helplines through
+your national health service or the
 [IASP crisis centre list](https://www.iasp.info/resources/Crisis_Centres/).
 
 ## License
