@@ -1,0 +1,23 @@
+{
+  "crisis_message": "It sounds like you are going through something very serious, and you deserve real support right now. You are not alone, and there are people who want to help you. Please reach out immediately.",
+  "helplines": [
+    {
+      "region": "Your Country",
+      "name": "National Crisis / Suicide Prevention Line",
+      "number": "REPLACE-WITH-LOCAL-NUMBER",
+      "note": "REPLACE WITH YOUR COUNTRY'S HELPLINE"
+    },
+    {
+      "region": "Your Country",
+      "name": "Childline / Youth Helpline",
+      "number": "REPLACE-WITH-LOCAL-NUMBER",
+      "note": "REPLACE WITH YOUR COUNTRY'S HELPLINE"
+    },
+    {
+      "region": "Local",
+      "name": "Emergency Services",
+      "number": "REPLACE-WITH-LOCAL-NUMBER",
+      "note": "REPLACE WITH YOUR COUNTRY'S EMERGENCY NUMBER"
+    }
+  ]
+}
